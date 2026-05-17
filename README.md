@@ -1,36 +1,83 @@
 # ThermaIQ
 
-ThermaIQ, veri merkezi sogutma operasyonlarini PUE, termal guvenlik ve enerji maliyeti acisindan optimize eden bir dijital ikiz demosudur. Backend tarafinda fizik tabanli PUE hesaplama, Optuna ile kisitli optimizasyon ve Nemotron/OpenRouter destekli operasyon raporu uretilir. Frontend tarafinda ise dashboard, takvim veri katmanlari, dosya yukleme akislari ve demo raporlari gosterilir.
+## Project Overview
 
-## Neler Var?
+ThermaIQ is a hackathon prototype for AI-assisted data center cooling optimization. It combines a deterministic physics model, constrained Optuna search, and an LLM decision/report layer to help operators evaluate cooling setpoints, PUE impact, thermal risk, savings potential, and carbon impact before taking action.
 
-- FastAPI tabanli backend
-- Fizik tabanli PUE ve ASHRAE benzeri guvenlik kontrolleri
-- Optuna ile chiller setpoint ve fan hizi optimizasyonu
-- NVIDIA Nemotron veya OpenRouter ile LLM destekli politika/rapor uretimi
-- API anahtari yoksa local fallback/mock rapor modu
-- Statik HTML frontend
-- Takvim olaylari, sicaklik, trafik/yuk ve operasyon/sensor ornek verileri
-- Tek komutla demo baslatmak icin `run_demo.bat`
+The default flow uses the real backend, `physics.py`, `optimizer.py`, and live NVIDIA Nemotron/OpenRouter integration when a valid API key is configured. If the external LLM service is unavailable, the system can produce a local fallback report for demo continuity and fault tolerance.
 
-## Proje Yapisi
+## Hackathon Theme Codes
+
+- **A2 — Sustainability**
+- **B4 — Data Center**
+- **C1 — Text generation and chat**
+- **C7 — Agent and tool use**
+
+ThermaIQ also performs time-contextual operation analysis and physics-based safety/risk checks, but these are implementation details rather than separate theme-code claims.
+
+## Problem
+
+Data center cooling decisions affect energy cost, PUE, carbon output, and hardware safety at the same time. Operators often need to balance competing goals:
+
+- reducing cooling energy,
+- keeping inlet temperature within safe limits,
+- avoiding risky setpoint changes during peak load,
+- explaining recommendations in language facility teams can act on.
+
+Manual setpoint decisions can be conservative, hard to compare across scenarios, and difficult to translate into a clear operational action plan.
+
+## Solution
+
+ThermaIQ evaluates a facility scenario through a physics-based digital twin and searches for safer, more efficient chiller setpoint and fan-speed candidates. The system then converts the result into an operator-facing report and a structured action output.
+
+The prototype answers:
+
+- What is the current PUE estimate?
+- Which setpoint/fan candidate improves PUE without violating thermal limits?
+- What is the expected annualized savings and carbon impact in representative demo scenarios?
+- What should the operator review or approve?
+
+## Architecture
+
+```text
+Frontend
+  |
+  |  scenario values, sample files, operator actions
+  v
+FastAPI backend
+  |
+  |-- physics.py
+  |     deterministic PUE, COP, inlet temperature, safety checks
+  |
+  |-- optimizer.py
+  |     Optuna-based constrained search for chiller setpoint and fan speed
+  |
+  |-- nemotron.py
+  |     NVIDIA Nemotron / OpenRouter policy, decision, report layer
+  |     local fallback reporting if external LLM access fails
+  |
+  `-- calendar_parser.py
+        time-contextual event parsing for operational planning
+```
+
+## Project Structure
 
 ```text
 thermaiq/
 |-- backend/
-|   |-- main.py                    # FastAPI uygulamasi ve endpointler
-|   |-- physics.py                 # PUE, termal durum ve dogrulama hesaplari
-|   |-- optimizer.py               # Optuna tabanli dijital ikiz optimizasyonu
-|   |-- nemotron.py                # Nemotron/OpenRouter entegrasyonu ve fallback raporlar
-|   |-- calendar_parser.py         # Takvim olay dosyasi parser'i
-|   |-- adaptation.py              # Musteri verisi adaptasyon yardimcilari
-|   |-- generate_data.py           # Veri uretim yardimcilari
-|   |-- evaluate_optimization.py   # Optimizasyon degerlendirme betigi
-|   `-- requirements.txt           # Python bagimliliklari
+|   |-- main.py                    # FastAPI application and endpoints
+|   |-- physics.py                 # Deterministic PUE, COP, inlet temperature calculations
+|   |-- optimizer.py               # Optuna-based safe setpoint/fan search
+|   |-- nemotron.py                # Live/fallback LLM decision and report layer
+|   |-- calendar_parser.py         # Calendar/event file parser
+|   |-- adaptation.py              # Customer data upload/adaptation preview helpers
+|   |-- generate_data.py           # Synthetic/sample data utility
+|   |-- evaluate_optimization.py   # Scenario evaluation helper
+|   `-- requirements.txt           # Backend dependencies
 |-- frontend/
-|   |-- index.html                 # Statik dashboard/demo arayuzu
-|   |-- API_CONTRACTS.md           # Frontend-backend endpoint sozlesmeleri
-|   |-- README.md                  # Frontend sorumluluk notlari
+|   |-- index.html                 # Static dashboard and simulator UI
+|   |-- API_CONTRACTS.md           # Frontend/backend API notes
+|   |-- README.md                  # Frontend-specific notes
 |   |-- calendar-events-sample.csv
 |   |-- calendar-events-sample.txt
 |   `-- sample-data/
@@ -38,148 +85,133 @@ thermaiq/
 |       |-- operations-sensor-sample.csv
 |       |-- traffic-forecast.csv
 |       `-- weather-forecast.csv
-|-- data/                          # Ham/islenmis veri klasoru
-|-- models/                        # Egitilmis model dosyalari icin alan
-|-- demo_scenarios.json            # Demo senaryo verileri
-|-- thermaiqlast.html              # Alternatif/onceki HTML demo ciktisi
-|-- run_demo.bat                   # Backend + frontend demo baslatici
-|-- .env.example                   # Ortam degiskeni sablonu
+|-- data/
+|-- models/
+|-- run_demo.bat
+|-- .env.example
 `-- README.md
 ```
 
-## Gereksinimler
+## Tech Stack
 
-- Python 3.10+ onerilir
-- Windows icin `run_demo.bat` kullanilabilir
-- LLM raporlari icin opsiyonel olarak `NVIDIA_API_KEY` veya `OPENROUTER_API_KEY`
+- **Backend:** FastAPI, Uvicorn
+- **Optimization:** Optuna
+- **Physics/data processing:** Python, NumPy, pandas
+- **LLM layer:** NVIDIA Nemotron or OpenRouter-compatible chat completion endpoint
+- **Frontend:** Static HTML/CSS/JavaScript
 
-API anahtari olmadan da demo calisir. Bu durumda backend deterministic local fallback raporlar uretir.
+## Installation
 
-## Kurulum
+```bash
+git clone https://github.com/seymaerdogan0/thermaiq.git
+cd thermaiq
+python -m venv .venv
+source .venv/bin/activate
+pip install -r backend/requirements.txt
+cp .env.example .env
+```
+
+On Windows PowerShell:
 
 ```powershell
-cd C:\Users\ASUS\Desktop\thermaiq
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1
 pip install -r backend\requirements.txt
 Copy-Item .env.example .env
 ```
 
-`.env` dosyasina sadece kullanacaginiz saglayicinin anahtarini girmeniz yeterlidir:
+Set one live LLM provider key in `.env`:
 
 ```env
 NVIDIA_API_KEY=nvapi-xxx
 OPENROUTER_API_KEY=sk-or-v1-xxx
 ```
 
-## Calistirma
+## Backend Setup
 
-### Hizli demo
-
-Windows'ta proje kokunden:
-
-```powershell
-.\run_demo.bat
+```bash
+cd backend
+uvicorn main:app --host 127.0.0.1 --port 8001 --reload
 ```
 
-Not: `run_demo.bat` icindeki `PYTHON` yolu yerel makineye gore yazilmistir. Eger sizde farkliysa bu yolu Python 3.10+ yorumlayiciniza gore guncelleyin.
-
-Bu betik:
-
-- Backend'i `http://127.0.0.1:8001` adresinde baslatir
-- Frontend'i `http://127.0.0.1:3000` adresinde baslatir
-- Tarayicida frontend'i acar
-
-### Manuel calistirma
-
-Backend:
-
-```powershell
-cd C:\Users\ASUS\Desktop\thermaiq\backend
-python -m uvicorn main:app --host 127.0.0.1 --port 8001 --reload
-```
-
-Frontend:
-
-```powershell
-cd C:\Users\ASUS\Desktop\thermaiq
-python -m http.server 3000 -d frontend
-```
-
-Tarayici:
-
-```text
-http://127.0.0.1:3000
-```
-
-API dokumani:
+API documentation:
 
 ```text
 http://127.0.0.1:8001/docs
 ```
 
-## Temel Endpointler
+## Frontend Setup
 
-| Method | Endpoint | Aciklama |
+```bash
+cd frontend
+python -m http.server 3000
+```
+
+Open:
+
+```text
+http://127.0.0.1:3000
+```
+
+## API Endpoints
+
+| Method | Endpoint | Purpose |
 | --- | --- | --- |
-| `GET` | `/health` | Servis ve bilesen saglik durumu |
-| `POST` | `/api/predict` | Tek senaryo icin PUE hesaplama |
-| `POST` | `/api/twin-optimize` | Fizik motoru + LLM politika + Optuna optimizasyonu |
-| `POST` | `/api/report` | Operasyon raporu uretimi |
-| `GET` | `/api/report/sample` | Mock rapor ornegi |
-| `GET` | `/api/demo-scenarios` | Offline demo senaryolari |
-| `POST` | `/api/bms/apply` | Mock BACnet/IP komut uygulama |
-| `POST` | `/api/calendar/parse` | Takvim olay dosyasi parse etme |
-| `GET` | `/api/calendar/sample` | Ornek takvim olaylari |
-| `POST` | `/api/adaptation/upload` | Musteri CSV on kontrolu |
-| `POST` | `/api/adaptation/run` | Musteri CSV adaptasyon demo akisi |
+| `GET` | `/health` | Service and component status |
+| `POST` | `/api/predict` | Single-scenario deterministic PUE calculation |
+| `POST` | `/api/twin-optimize` | Physics model + LLM policy + Optuna optimization |
+| `POST` | `/api/report` | Operator-facing report generation |
+| `GET` | `/api/report/sample` | Local fallback report sample |
+| `GET` | `/api/demo-scenarios` | Offline demo scenarios |
+| `POST` | `/api/bms/apply` | Structured command payload endpoint for prototype review |
+| `POST` | `/api/calendar/parse` | Calendar/event file parsing |
+| `GET` | `/api/calendar/sample` | Sample calendar events |
+| `POST` | `/api/adaptation/upload` | Customer CSV preview |
+| `POST` | `/api/adaptation/run` | Customer CSV adaptation preview |
 
-## Ornek API Kullanimi
+Example optimization call:
 
-PUE tahmini:
-
-```powershell
-Invoke-RestMethod `
-  -Method Post `
-  -Uri http://127.0.0.1:8001/api/predict `
-  -ContentType "application/json" `
-  -Body '{"server_workload_pct":85,"ambient_temp_c":35,"chiller_setpoint_c":7,"fan_speed_pct":65,"it_capacity_mw":21}'
+```bash
+curl -X POST http://127.0.0.1:8001/api/twin-optimize \
+  -H "Content-Type: application/json" \
+  -d '{
+    "server_workload_pct": 85,
+    "ambient_temp_c": 35,
+    "hour": 14,
+    "month": 7,
+    "it_capacity_mw": 21,
+    "n_trials": 60
+  }'
 ```
 
-Optimizasyon:
+## Live AI Mode Explanation
 
-```powershell
-Invoke-RestMethod `
-  -Method Post `
-  -Uri http://127.0.0.1:8001/api/twin-optimize `
-  -ContentType "application/json" `
-  -Body '{"server_workload_pct":85,"ambient_temp_c":35,"hour":14,"month":7,"it_capacity_mw":21,"n_trials":60}'
-```
+With a valid API key, ThermaIQ makes live LLM calls for policy, final decision, and report generation. The LLM does not invent the savings calculation; it receives physics/optimization outputs and turns them into an operational explanation.
 
-Local/mock rapor:
+If the LLM provider is unavailable, the backend can fall back to deterministic local report generation. This fallback is a technical resilience mechanism, not the primary final-demo claim.
 
-```powershell
-Invoke-RestMethod `
-  -Method Post `
-  -Uri http://127.0.0.1:8001/api/report `
-  -ContentType "application/json" `
-  -Body '{"scenario_name":"Yaz ogle demo","current_pue":1.74,"optimum_pue":1.31,"ambient_temp_c":35,"server_workload_pct":85,"monthly_savings_tl":412000,"use_mock":true}'
-```
+## Standard Facility Management / Cooling System Output Explanation
 
-## Veri Dosyalari
+ThermaIQ is currently a decision-support prototype that does not directly intervene in standard facility management or cooling systems. It produces a readable operator report and can optionally emit structured JSON action output that existing systems can parse.
 
-Frontend takvim ekraninda dort farkli veri tipi kullanilir:
+In a production phase, this structured output could be integrated with existing control systems while preserving institutional safety limits, approval workflows, and human oversight.
 
-- Onemli tarihler: resmi tatil, sinav, mac, kampanya veya kamu yogunlugu gibi olaylar
-- Sicaklik verisi: tarih bazli dis sicaklik tahmini veya gecmis verisi
-- Trafik/yuk verisi: tarih bazli sunucu yuku veya trafik tahmini
-- Operasyon/sensor verisi: saatlik veri merkezi olcumleri
+## Savings and Carbon Impact Disclaimer
 
-Ornek dosyalar `frontend/sample-data/` altindadir. API tarafindaki takvim parser'i `.csv`, `.json`, `.txt`, `.tsv` ve `.md` formatlarini destekler.
+In four representative operation scenarios, the physics-based PUE model calculated an annualized savings potential of approximately **3.2 million TL/year**. This is not a guaranteed field result; it is the annualized engineering output of hackathon prototype demo scenarios.
 
-## Notlar
+The same representative scenarios produced an annualized carbon reduction potential of approximately **456 tons CO2/year**.
 
-- Frontend su anda backend'i `http://127.0.0.1:8001` adresinde bekler.
-- `POST /api/report` icin `use_mock: true` gonderilirse LLM API cagrisi yapilmaz.
-- API anahtari eksik veya servis hatasi olursa backend otomatik local fallback uretir.
-- `models/` klasoru egitilmis model dosyalari icin ayrilmistir; mevcut demo agirlikli olarak fizik motoru ve optimizasyon akisini kullanir.
+ThermaIQ does not guarantee LEED Gold certification or any sustainability certification outcome. It supports such goals by making energy, PUE, and carbon metrics more measurable at the operational decision level.
+
+## Future Work
+
+- Validate the physics model with larger real facility datasets.
+- Add scenario weighting based on real annual operating-hour distributions.
+- Add role-based approval workflows for facility teams.
+- Integrate structured outputs with existing control systems after safety review.
+- Add audit logging for recommendations, approvals, and applied actions.
+
+## Team
+
+ThermaIQ was built as a hackathon prototype by the project team for AI-assisted sustainable data center operations.

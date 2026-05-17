@@ -1,64 +1,64 @@
-# ThermaIQ Frontend Altyapısı
+# ThermaIQ Frontend
 
-Bu klasörün amacı model geliştirmek değil; backend/model ekibi hazır oldukça onların çıktısını kullanıcıya anlaşılır, güvenli ve demo yapılabilir bir arayüz olarak göstermektir.
+This folder contains the static demo interface for the ThermaIQ prototype. Its role is to make backend outputs visible, understandable, and usable during the hackathon demo.
 
-## Sorumluluk Alanı
+## Responsibilities
 
-Frontend tarafı şu işleri sahiplenir:
+The frontend owns:
 
-- Dashboard metriklerini göstermek
-- Takvimde önemli tarihleri gerçek günlerine yerleştirmek
-- Sıcaklık ve trafik/yük verisini ayrı katmanlar olarak göstermek
-- Backend rapor çıktısını Nemotron panelinde göstermek
-- Backend hazır değilken demo akışını mock/fallback veriyle ayakta tutmak
-- Dosya yükleme tipini kullanıcıya seçtirmek
+- Showing dashboard metrics
+- Sending simulator scenarios to the backend optimization endpoint
+- Rendering calendar/event layers
+- Showing backend optimization and report output
+- Displaying structured JSON payloads for demo transparency
+- Letting the user select and test different operating conditions
 
-Frontend tarafı şu işleri sahiplenmez:
+The frontend does not own:
 
-- XGBoost model eğitimi
-- Optuna trial yönetimi
-- Fizik hesaplarının nihai doğruluğu
-- NVIDIA API key yönetimi
-- Üretim verisini kalıcı saklama
+- Physics-model correctness
+- Optuna trial logic
+- NVIDIA/OpenRouter API key management
+- Production data persistence
+- Direct integration with facility control systems
 
-## Çalıştırma
+## Run
 
-Frontend statik HTML olarak çalışır.
+The frontend is a static HTML app.
 
-```powershell
-cd "C:\Users\Emirhan\OneDrive - Yildiz Technical University\Masaüstü\POE\thermaiq\frontend"
-C:\Users\Emirhan\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\python.exe -m http.server 3000
+```bash
+cd frontend
+python -m http.server 3000
 ```
 
-Tarayıcı:
+Open:
 
 ```text
 http://127.0.0.1:3000
 ```
 
-Backend şu anda frontend tarafından `8001` portunda beklenir:
+The backend is expected at:
 
 ```text
 http://127.0.0.1:8001
 ```
 
-## Veri Katmanları
+## Data Layers
 
-Takvim ekranında üç ayrı dosya tipi seçilir:
+The calendar and simulator screens can use these sample data layers:
 
-- `Önemli tarihler`: Resmi tatil, sınav, maç, kampanya, kamu yoğunluğu gibi olaylar.
-- `Sıcaklık verisi`: Tarih bazlı geçmiş veya tahmini dış sıcaklık.
-- `Trafik/yük verisi`: Tarih bazlı beklenen veya geçmiş sunucu yükü.
-- `Operasyon/sensör verisi`: Saatlik veri merkezi ölçümleri. Frontend bu dosyadan günlük ortalama sıcaklık ve yük katmanı üretir.
+- `Important dates`: holidays, exams, events, campaigns, or public-service traffic peaks
+- `Weather data`: date-based historical or forecast ambient temperature
+- `Traffic/load data`: date-based server workload or traffic estimate
+- `Operations/sensor data`: facility measurements used for demo context
 
-Bu ayrım önemli: sıcaklık bir olay değildir, takvim gününün üstüne binen bir veri katmanıdır.
+Temperature and traffic values are not calendar events by themselves; they are operational context layers.
 
-## Demo Stratejisi
+## Demo Flow
 
-Backend veya model hazır değilse frontend yine çalışır:
+The main demo flow uses the real backend:
 
-- Varsayılan dashboard değerleri gösterilir.
-- Takvim dosyaları yüklenebilir.
-- `use_mock: true` ile backend rapor endpoint'i yerel rapor döndürür.
+- `/api/twin-optimize` for physics + Optuna optimization
+- `/api/report` for live LLM-backed operational reporting when an API key is available
+- local fallback reporting only when the external LLM provider is unavailable
 
-Backend/model ekibi hazır oldukça bu mock noktaları gerçek endpointlere bağlanır.
+Fallback output is kept as a resilience mechanism, not as the primary demo mode.

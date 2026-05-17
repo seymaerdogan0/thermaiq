@@ -1,14 +1,7 @@
 fastapi
 uvicorn
-xgboost
 optuna
 pandas
 numpy
-scikit-learn
-shap
-plotly
 requests
 python-dotenv
-joblib
-httpx
-python-multipart
