@@ -1,64 +1,66 @@
-# ThermaIQ Frontend
+# ThermaIQ Frontend Altyapısı
 
-This folder contains the static demo interface for the ThermaIQ prototype. Its role is to make backend outputs visible, understandable, and usable during the hackathon demo.
+Bu klasörün amacı model geliştirmek değil; backend/model ekibi hazır oldukça onların çıktısını kullanıcıya anlaşılır, güvenli ve demo yapılabilir bir arayüz olarak göstermektir.
 
-## Responsibilities
+## Sorumluluk Alanı
 
-The frontend owns:
+Frontend tarafı şu işleri sahiplenir:
 
-- Showing dashboard metrics
-- Sending simulator scenarios to the backend optimization endpoint
-- Rendering calendar/event layers
-- Showing backend optimization and report output
-- Displaying structured JSON payloads for demo transparency
-- Letting the user select and test different operating conditions
+- Dashboard metriklerini göstermek
+- Takvimde önemli tarihleri gerçek günlerine yerleştirmek
+- Sıcaklık ve trafik/yük verisini ayrı katmanlar olarak göstermek
+- Backend rapor çıktısını Nemotron panelinde göstermek
+- Backend hazır değilken demo akışını mock/fallback veriyle ayakta tutmak
+- Dosya yükleme tipini kullanıcıya seçtirmek
 
-The frontend does not own:
+Frontend tarafı şu işleri sahiplenmez:
 
-- Physics-model correctness
-- Optuna trial logic
-- NVIDIA/OpenRouter API key management
-- Production data persistence
-- Direct integration with facility control systems
+- XGBoost model eğitimi
+- Optuna trial yönetimi
+- Fizik hesaplarının nihai doğruluğu
+- NVIDIA API key yönetimi
+- Üretim verisini kalıcı saklama
 
-## Run
+## Çalıştırma
 
-The frontend is a static HTML app.
+Frontend statik dosyalarla çalışır; panel parçaları `fetch` ile yüklendiği için local HTTP server üzerinden açılmalıdır. En kolayı proje kökündeki `run_demo.bat` dosyasına çift tıklamaktır.
 
-```bash
-cd frontend
-python -m http.server 3000
+```powershell
+cd "C:\Users\Emirhan\OneDrive - Yildiz Technical University\Masaüstü\POE\thermaiq\frontend"
+C:\Users\Emirhan\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\python.exe -m http.server 3000
 ```
 
-Open:
+Tarayıcı:
 
 ```text
 http://127.0.0.1:3000
 ```
 
-The backend is expected at:
+Sekme logosunu değiştirmek için `frontend/assets/favicon.svg` dosyasını aynı isimle değiştirmeniz yeterlidir.
+
+Backend şu anda frontend tarafından `8001` portunda beklenir:
 
 ```text
 http://127.0.0.1:8001
 ```
 
-## Data Layers
+## Veri Katmanları
 
-The calendar and simulator screens can use these sample data layers:
+Takvim ekranında üç ayrı dosya tipi seçilir:
 
-- `Important dates`: holidays, exams, events, campaigns, or public-service traffic peaks
-- `Weather data`: date-based historical or forecast ambient temperature
-- `Traffic/load data`: date-based server workload or traffic estimate
-- `Operations/sensor data`: facility measurements used for demo context
+- `Önemli tarihler`: Resmi tatil, sınav, maç, kampanya, kamu yoğunluğu gibi olaylar.
+- `Sıcaklık verisi`: Tarih bazlı geçmiş veya tahmini dış sıcaklık.
+- `Trafik/yük verisi`: Tarih bazlı beklenen veya geçmiş sunucu yükü.
+- `Operasyon/sensör verisi`: Saatlik veri merkezi ölçümleri. Frontend bu dosyadan günlük ortalama sıcaklık ve yük katmanı üretir.
 
-Temperature and traffic values are not calendar events by themselves; they are operational context layers.
+Bu ayrım önemli: sıcaklık bir olay değildir, takvim gününün üstüne binen bir veri katmanıdır.
 
-## Demo Flow
+## Demo Stratejisi
 
-The main demo flow uses the real backend:
+Backend veya model hazır değilse frontend yine çalışır:
 
-- `/api/twin-optimize` for physics + Optuna optimization
-- `/api/report` for live LLM-backed operational reporting when an API key is available
-- local fallback reporting only when the external LLM provider is unavailable
+- Varsayılan dashboard değerleri gösterilir.
+- Takvim dosyaları yüklenebilir.
+- `use_mock: true` ile backend rapor endpoint'i yerel rapor döndürür.
 
-Fallback output is kept as a resilience mechanism, not as the primary demo mode.
+Backend/model ekibi hazır oldukça bu mock noktaları gerçek endpointlere bağlanır.

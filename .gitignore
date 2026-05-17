@@ -7,5 +7,3 @@ models/*.json
 data/raw/*.csv
 data/processed/*.csv
 .DS_Store
-thermaiqlast.html
-.claude/
